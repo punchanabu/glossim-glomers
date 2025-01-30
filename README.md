@@ -25,3 +25,11 @@ This challenge composed of 5 parts, each part is a distributed system challenge.
 - This one is a multi-node broadcast service, it will broadcast the message to all the nodes in the cluster.
 - I stored the neighbors from a `topology` request and broadcast to the neighbors using goroutines with best effort delivery.
 - logic is pretty simple, I stored the `map of message` and if the message wasn't recognized before I will just send to my neighbors.
+
+### Part 3.3: Fault Tolerance [maelstrom-multi-node-fault-tolerance](./maelstrom-multi-node-fault-tolerance)
+- I use goroutine to wakes up every second to check on message delivery status.
+- New message get 3 attempst with 5ms cooldown
+- Any unsuccessful message move to retry queue then they get 5 more attempts with 5ms delay
+
+### Part 3.4 and 3.5: Efficient Broadcast
+- I think I will skip this because of my skill issues when I'm better I will come back to this.
