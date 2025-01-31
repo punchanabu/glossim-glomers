@@ -17,23 +17,38 @@ func main() {
 			return err
 		}
 
-		curr, err := seqKV.ReadInt(context.Background(), "counter")
-		if err != nil {
-			if maelstrom.ErrorCode(err) == maelstrom.KeyDoesNotExist {
-				curr = 0
-			} else {
+		delta := int(body["delta"].(float64))
+
+		for {
+			curr, err := seqKV.Read(context.Background(), "counter")
+			if err != nil {
+				if maelstrom.ErrorCode(err) == maelstrom.KeyDoesNotExist {
+					err = seqKV.CompareAndSwap(context.Background(), "counter", nil, delta, true)
+					if err == nil {
+						break
+					}
+					continue
+				}
 				return err
 			}
-		}
 
-		seqKV.Write(context.Background(), "counter", curr+body["delta"].(int))
+			currInt := curr.(int)
+
+			err = seqKV.CompareAndSwap(context.Background(), "counter", currInt, currInt+delta, false)
+			if err == nil {
+				break
+			}
+		}
 
 		return node.Reply(msg, map[string]any{"type": "add_ok"})
 	})
 
 	node.Handle("read", func(msg maelstrom.Message) error {
-		value, err := seqKV.ReadInt(context.Background(), "counter")
+		value, err := seqKV.Read(context.Background(), "counter")
 		if err != nil {
+			if maelstrom.ErrorCode(err) == maelstrom.KeyDoesNotExist {
+				return node.Reply(msg, map[string]any{"type": "read_ok", "value": 0})
+			}
 			return err
 		}
 
