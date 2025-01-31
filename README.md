@@ -33,3 +33,11 @@ This challenge composed of 5 parts, each part is a distributed system challenge.
 
 ### Part 3.4 and 3.5: Efficient Broadcast
 - I think I will skip this because of my skill issues when I'm better I will come back to this.
+
+### Part 4: Grow-Only Counter
+- I used sequence key-value store that is provided by maelstrom lib to implement this part think of something like this.
+```
+[Node 1] ----\
+[Node 2] ----- [seq-kv service] (stores the counter provided by maelstrom)
+[Node 3] ----/
+```
