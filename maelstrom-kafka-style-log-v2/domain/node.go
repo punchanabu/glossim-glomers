@@ -2,6 +2,7 @@ package domain
 
 type Node struct {
 	LogStorage map[string]*Log
+	Committed  map[string]int
 }
 
 func NewNode() *Node {
@@ -30,4 +31,16 @@ func (n *Node) GetLog(key string, offset int) []int {
 		return log.Messages[offset:]
 	}
 	return []int{}
+}
+
+func (n *Node) Commit(key string, offset int) {
+	if log, exists := n.LogStorage[key]; exists {
+		log.Messages = log.Messages[:offset]
+	}
+
+	n.Committed[key] = offset
+}
+
+func (n *Node) GetCommitted(key string) int {
+	return n.Committed[key]
 }

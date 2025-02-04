@@ -28,6 +28,22 @@ func main() {
 		return n.Reply(msg, response)
 	})
 
+	n.Handle("commit_offsets", func(msg maelstrom.Message) error {
+		response, err := handler.HandleCommit(node)(msg.Body)
+		if err != nil {
+			return err
+		}
+		return n.Reply(msg, response)
+	})
+
+	n.Handle("list_committed_offsets", func(msg maelstrom.Message) error {
+		response, err := handler.HandleList(node)(msg.Body)
+		if err != nil {
+			return err
+		}
+		return n.Reply(msg, response)
+	})
+
 	if err := n.Run(); err != nil {
 		log.Fatal(err)
 	}
