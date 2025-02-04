@@ -31,13 +31,16 @@ This challenge composed of 5 parts, each part is a distributed system challenge.
 - New message get 3 attempst with 5ms cooldown
 - Any unsuccessful message move to retry queue then they get 5 more attempts with 5ms delay
 
-### Part 3.4 and 3.5: Efficient Broadcast
+### Part 3.4 and 3.5: Efficient Broadcast [maelstrom-efficient-broadcast](./maelstrom-efficient-broadcast)
 - I think I will skip this because of my skill issues when I'm better I will come back to this.
 
-### Part 4: Grow-Only Counter
+### Part 4: Grow-Only Counter [maelstrom-grow-only-counter](./maelstrom-grow-only-counter)
 - I used sequence key-value store that is provided by maelstrom lib to implement this part think of something like this.
 ```
 [Node 1] ----\
 [Node 2] ----- [seq-kv service] (stores the counter provided by maelstrom)
 [Node 3] ----/
 ```
+
+## Part 5.1: Kafka-style Log [maelstrom-kafka-style-log-v2](./maelstrom-kafka-style-log-v2)
+- This part is a kafka-style log service, it will store the log and provide a way to poll the log.
