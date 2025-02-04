@@ -2,34 +2,39 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"maelstrom-kafka-style-log-v2/domain"
+
+	maelstrom "github.com/jepsen-io/maelstrom/demo/go"
 )
 
-type ListRequest struct {
-	Type string   `json:"type"`
-	Keys []string `json:"keys"`
-}
-
-type ListResponse struct {
-	Type    string         `json:"type"`
-	Offsets map[string]int `json:"offsets"`
-}
-
-func HandleList(node *domain.Node) func([]byte) ([]byte, error) {
-	return func(msg []byte) ([]byte, error) {
-		var request ListRequest
-		if err := json.Unmarshal(msg, &request); err != nil {
+func HandleList(node *domain.Node) func(maelstrom.Message) (map[string]any, error) {
+	return func(msg maelstrom.Message) (map[string]any, error) {
+		var body map[string]any
+		if err := json.Unmarshal(msg.Body, &body); err != nil {
 			return nil, err
 		}
 
-		offsets := make(map[string]int)
-		for _, key := range request.Keys {
-			offsets[key] = node.GetCommitted(key)
+		rawKeys, ok := body["keys"].([]interface{})
+		if !ok {
+			return nil, fmt.Errorf("keys must be an array")
 		}
 
-		return json.Marshal(ListResponse{
-			Type:    "list_committed_offsets_ok",
-			Offsets: offsets,
-		})
+		offsets := make(map[string]int)
+		for _, rawKey := range rawKeys {
+			key, ok := rawKey.(string)
+			if !ok {
+				return nil, fmt.Errorf("each key must be a string")
+			}
+			offset := node.GetCommitted(key)
+			if offset != 0 { 
+				offsets[key] = offset
+			}
+		}
+
+		return map[string]any{
+			"type":    "list_committed_offsets_ok",
+			"offsets": offsets,
+		}, nil
 	}
 }

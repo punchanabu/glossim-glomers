@@ -13,7 +13,7 @@ func main() {
 	node := domain.NewNode()
 
 	n.Handle("send", func(msg maelstrom.Message) error {
-		response, err := handler.HandleSend(node)(msg.Body)
+		response, err := handler.HandleSend(node)(msg)
 		if err != nil {
 			return err
 		}
@@ -21,7 +21,7 @@ func main() {
 	})
 
 	n.Handle("poll", func(msg maelstrom.Message) error {
-		response, err := handler.HandlePoll(node)(msg.Body)
+		response, err := handler.HandlePoll(node)(msg)
 		if err != nil {
 			return err
 		}
@@ -29,7 +29,7 @@ func main() {
 	})
 
 	n.Handle("commit_offsets", func(msg maelstrom.Message) error {
-		response, err := handler.HandleCommit(node)(msg.Body)
+		response, err := handler.HandleCommit(node)(msg)
 		if err != nil {
 			return err
 		}
@@ -37,7 +37,7 @@ func main() {
 	})
 
 	n.Handle("list_committed_offsets", func(msg maelstrom.Message) error {
-		response, err := handler.HandleList(node)(msg.Body)
+		response, err := handler.HandleList(node)(msg)
 		if err != nil {
 			return err
 		}

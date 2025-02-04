@@ -1,6 +1,11 @@
 package domain
 
+import (
+	"sync"
+)
+
 type Node struct {
+	mu         sync.RWMutex
 	LogStorage map[string]*Log
 	Committed  map[string]int
 }
@@ -8,10 +13,14 @@ type Node struct {
 func NewNode() *Node {
 	return &Node{
 		LogStorage: make(map[string]*Log),
+		Committed:  make(map[string]int),
 	}
 }
 
 func (n *Node) AddLog(key string, message int) int {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+
 	if _, ok := n.LogStorage[key]; !ok {
 		n.LogStorage[key] = &Log{
 			Messages: []int{},
@@ -24,23 +33,40 @@ func (n *Node) AddLog(key string, message int) int {
 }
 
 func (n *Node) GetLog(key string, offset int) []int {
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+
 	if log, exists := n.LogStorage[key]; exists {
 		if offset >= len(log.Messages) {
 			return []int{}
 		}
-		return log.Messages[offset:]
+		messages := make([]int, len(log.Messages[offset:]))
+		copy(messages, log.Messages[offset:])
+		return messages
 	}
 	return []int{}
 }
 
 func (n *Node) Commit(key string, offset int) {
-	if log, exists := n.LogStorage[key]; exists {
-		log.Messages = log.Messages[:offset]
-	}
+	n.mu.Lock()
+	defer n.mu.Unlock()
 
+	if n.Committed == nil {
+		n.Committed = make(map[string]int)
+	}
 	n.Committed[key] = offset
 }
 
 func (n *Node) GetCommitted(key string) int {
-	return n.Committed[key]
+	n.mu.RLock()
+	defer n.mu.RUnlock()
+
+	if n.Committed == nil {
+		return 0
+	}
+
+	if offset, exists := n.Committed[key]; exists {
+		return offset
+	}
+	return 0
 }

@@ -2,34 +2,34 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"maelstrom-kafka-style-log-v2/domain"
+
+	maelstrom "github.com/jepsen-io/maelstrom/demo/go"
 )
 
-type SendRequest struct {
-	Type string `json:"type"`
-	Key  string `json:"key"`
-	Msg  int    `json:"msg"`
-}
-
-type SendResponse struct {
-	Type   string `json:"type"`
-	Offset int    `json:"offset"`
-}
-
-func HandleSend(node *domain.Node) func([]byte) ([]byte, error) {
-	return func(msg []byte) ([]byte, error) {
-		var request SendRequest
-		if err := json.Unmarshal(msg, &request); err != nil {
+func HandleSend(node *domain.Node) func(maelstrom.Message) (map[string]any, error) {
+	return func(msg maelstrom.Message) (map[string]any, error) {
+		var body map[string]any
+		if err := json.Unmarshal(msg.Body, &body); err != nil {
 			return nil, err
 		}
 
-		offset := node.AddLog(request.Key, request.Msg)
-
-		response := SendResponse{
-			Type:   "send_ok",
-			Offset: offset,
+		key, ok := body["key"].(string)
+		if !ok {
+			return nil, fmt.Errorf("key must be a string")
 		}
 
-		return json.Marshal(response)
+		msgVal, ok := body["msg"].(float64)
+		if !ok {
+			return nil, fmt.Errorf("msg must be a number")
+		}
+
+		offset := node.AddLog(key, int(msgVal))
+
+		return map[string]any{
+			"type":   "send_ok",
+			"offset": offset,
+		}, nil
 	}
 }
