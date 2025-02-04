@@ -42,5 +42,5 @@ This challenge composed of 5 parts, each part is a distributed system challenge.
 [Node 3] ----/
 ```
 
-## Part 5.1: Kafka-style Log [maelstrom-kafka-style-log-v2](./maelstrom-kafka-style-log-v2)
+### Part 5.1: Kafka-style Log [maelstrom-kafka-style-log-v2](./maelstrom-kafka-style-log-v2)
 - This part is a kafka-style log service, it will store the log and provide a way to poll the log.
