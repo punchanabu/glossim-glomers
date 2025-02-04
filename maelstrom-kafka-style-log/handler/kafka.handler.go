@@ -9,10 +9,10 @@ import (
 
 type KafkaHandler struct {
 	node   *maelstrom.Node
-	domain *domain.Node
+	domain domain.NodeActions
 }
 
-func NewKafkaHandler(node *maelstrom.Node, domain *domain.Node) *KafkaHandler {
+func NewKafkaHandler(node *maelstrom.Node, domain domain.NodeActions) *KafkaHandler {
 	return &KafkaHandler{
 		node:   node,
 		domain: domain,
@@ -33,17 +33,19 @@ func (h *KafkaHandler) Send(msg maelstrom.Message) error {
 		})
 	}
 
-	message, ok := body["message"].(int)
+	msgVal, ok := body["msg"].(float64)
 	if !ok {
 		return h.node.Reply(msg, map[string]any{
 			"type":  "error",
-			"error": "message must be a int",
+			"error": "msg must be a number",
 		})
 	}
 
-	offset := h.domain.Send(key, message)
-
-	return h.node.Reply(msg, map[string]any{"type": "send_ok", "offset": offset})
+	offset := h.domain.Send(key, int(msgVal))
+	return h.node.Reply(msg, map[string]any{
+		"type":   "send_ok",
+		"offset": offset,
+	})
 }
 
 func (h *KafkaHandler) Poll(msg maelstrom.Message) error {
@@ -52,18 +54,25 @@ func (h *KafkaHandler) Poll(msg maelstrom.Message) error {
 		return err
 	}
 
-	offsets, ok := body["offsets"].(map[string]int)
+	rawOffsets, ok := body["offsets"].(map[string]interface{})
 	if !ok {
 		return h.node.Reply(msg, map[string]any{
 			"type":  "error",
-			"error": "offsets must be a map[string]int",
+			"error": "offsets must be a map",
 		})
 	}
 
-	messages := h.domain.GetMessagesByOffset(offsets)
+	offsets := make(map[string]int)
+	for k, v := range rawOffsets {
+		if val, ok := v.(float64); ok {
+			offsets[k] = int(val)
+		}
+	}
+
+	msgs := h.domain.GetMessagesByOffset(offsets)
 	return h.node.Reply(msg, map[string]any{
-		"type":     "poll_ok",
-		"messages": messages,
+		"type": "poll_ok",
+		"msgs": msgs,
 	})
 }
 
@@ -73,17 +82,25 @@ func (h *KafkaHandler) CommitOffsets(msg maelstrom.Message) error {
 		return err
 	}
 
-	offsets, ok := body["offsets"].(map[string]int)
+	rawOffsets, ok := body["offsets"].(map[string]interface{})
 	if !ok {
 		return h.node.Reply(msg, map[string]any{
 			"type":  "error",
-			"error": "offsets must be a map[string]int",
+			"error": "offsets must be a map",
 		})
 	}
 
-	h.domain.CommitOffsets(offsets)
+	offsets := make(map[string]int)
+	for k, v := range rawOffsets {
+		if val, ok := v.(float64); ok {
+			offsets[k] = int(val)
+		}
+	}
 
-	return h.node.Reply(msg, map[string]any{"type": "commit_offsets_ok"})
+	h.domain.CommitOffsets(offsets)
+	return h.node.Reply(msg, map[string]any{
+		"type": "commit_offsets_ok",
+	})
 }
 
 func (h *KafkaHandler) ListCommittedOffsets(msg maelstrom.Message) error {
@@ -100,21 +117,7 @@ func (h *KafkaHandler) ListCommittedOffsets(msg maelstrom.Message) error {
 		})
 	}
 
-	// Convert keys to strings
-	keys := make([]string, len(rawKeys))
-	for i, k := range rawKeys {
-		if str, ok := k.(string); ok {
-			keys[i] = str
-		} else {
-			return h.node.Reply(msg, map[string]any{
-				"type":  "error",
-				"error": "all keys must be strings",
-			})
-		}
-	}
-
-	offsets := h.domain.GetCommitOffsets(keys)
-
+	offsets := h.domain.GetCommitOffsets(rawKeys)
 	return h.node.Reply(msg, map[string]any{
 		"type":    "list_committed_offsets_ok",
 		"offsets": offsets,
